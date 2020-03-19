@@ -27,7 +27,7 @@ sub MAIN($token) {
                         my $user-id = $/.Int;
                         my $user = $discord.get-user($user-id);
                         my $member = $guild.get-member($user);
-                        start-vote(:$discord, :$message, :$user, :$member).then({ end-vote(:$discord, :$guild, :$message, result => $^a.result) });
+                        start-vote(:$discord, :$message, :$user, :$member).then({ end-vote(:$discord, :$guild, :$user, :$message, result => $^a.result) });
                     } elsif $vote-in-progress eq True {
                         my $exception = "There is already a voteban in progress.";
                         my %response = exception(:$exception);
@@ -83,8 +83,30 @@ sub start-vote(:$discord, :$message, :$user, :$member) {
     })
 }
 
-sub end-vote(:$discord, :$guild, :$message, :%result) {
-    $message.channel.send-message("{%result}");
+sub end-vote(:$discord, :$guild, :$user, :$message, :%result) {
+    my Int $total = %result<yes> - %result<no>;
+
+    if $total >= $votes-required {
+        my %payload = description => "$total votes out of a required $votes-required were achieved.",
+                fields => [
+                    { inline => True, name => "$reaction-for-emote", value => "{%result<yes>}"},
+                    { inline => True, name => "$reaction-against-emote", value => "{%result<no>}" }
+                ],
+                author => { name => "{$user.username}#{$user.discriminator} was banned", icon_url => "https://cdn.discordapp.com/avatars/{$user.id}/{$user.avatar-hash}.png" }
+        ;
+
+        $message.channel.send-message(embed => %payload);
+    } else {
+        my %payload = description => "$total votes out of a required $votes-required were achieved.",
+                fields => [
+                    { inline => True, name => "$reaction-for-emote", value => "{%result<yes>}"},
+                    { inline => True, name => "$reaction-against-emote", value => "{%result<no>}" }
+                ],
+                author => { name => "{$user.username}#{$user.discriminator} was not banned", icon_url => "https://cdn.discordapp.com/avatars/{$user.id}/{$user.avatar-hash}.png" }
+        ;
+        $message.channel.send-message(embed => %payload);
+    }
+
     $vote-in-progress = False;
 }
 
