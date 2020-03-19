@@ -64,9 +64,7 @@ sub start-vote(:$discord, :$message, :$user, :$member) {
         $m;
     });
 
-    start react {
-        whenever Promise.in($voting-timeout) { done }
-
+    Promise(supply{
         my Int $yes-votes = 0;
         my Int $no-votes = 0;
 
@@ -80,8 +78,9 @@ sub start-vote(:$discord, :$message, :$user, :$member) {
                 $no-votes-- if $event<d><emoji><name> eq $reaction-against-emote;
             }
         }
-        my %result = yes => $yes-votes, no => $no-votes;
-    }
+        
+        whenever Promise.in($voting-timeout) { .emit( { yes => $yes-votes, no => $no-votes } ) }
+    )
 }
 
 sub end-vote(:$discord, :$guild, :$message, :%result) {
