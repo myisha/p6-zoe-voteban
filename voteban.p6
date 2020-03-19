@@ -79,7 +79,7 @@ sub start-vote(:$discord, :$message, :$user, :$member) {
             }
         }
         
-        whenever Promise.in($voting-timeout) { .emit( { yes => $yes-votes, no => $no-votes } ) }
+        whenever Promise.in($voting-timeout) { emit( { yes => $yes-votes, no => $no-votes } ) }
     )
 }
 
