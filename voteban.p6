@@ -74,22 +74,20 @@ sub start-vote(:$discord, :$message, :$user, :$member) {
             if $event<t> eq 'MESSAGE_REACTION_ADD' {
                 $yes-votes++ if $event<d><emoji><name> eq $reaction-for-emote;
                 $no-votes++ if $event<d><emoji><name> eq $reaction-against-emote;
-                $message.channel.send-message("yes: $yes-votes, no: $no-votes");
             }
             elsif $event<t> eq 'MESSAGE_REACTION_REMOVE' {
                 $yes-votes-- if $event<d><emoji><name> eq $reaction-for-emote;
                 $no-votes-- if $event<d><emoji><name> eq $reaction-against-emote;
-                $message.channel.send-message("yes: $yes-votes, no: $no-votes");
             }
         }
+        my %result = yes => $yes-votes, no => $no-votes;
     }
 }
 
-sub end-vote(:$discord, :$guild, :$result) {
-
-
-
- }
+sub end-vote(:$discord, :$guild, :$message, :%result) {
+    $vote-in-progress = False;
+    $message.channel.send-message(dd %result);
+}
 
 sub exception(:$exception) {
     my %payload = title => 'Something went wrong!',
