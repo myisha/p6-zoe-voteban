@@ -94,7 +94,6 @@ sub end-vote(:$discord, :$guild, :$user, :$message, :%result) {
                 ],
                 author => { name => "{$user.username}#{$user.discriminator} was banned", icon_url => "https://cdn.discordapp.com/avatars/{$user.id}/{$user.avatar-hash}.png" }
         ;
-
         $message.channel.send-message(embed => %payload);
     } else {
         my %payload = description => "$total votes out of a required $votes-required were achieved.",
