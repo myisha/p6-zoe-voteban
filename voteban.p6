@@ -9,7 +9,7 @@ my Str $reaction-against-emote = %*ENV<ZOE_VOTEBAN_REACTION_AGAINST_EMOTE> || "â
 my Int $votes-required = %*ENV<ZOE_VOTEBAN_VOTES_REQUIRED> || 10;
 my Int $voting-timeout = %*ENV<ZOE_VOTEBAN_VOTING_TIMEOUT> || 10;
 
-my PERMISSION @protected-permissions = KICK_MEMBERS, BAN_MEMBERS, ADMINISTRATOR, MANAGE_GUILD;
+my PERMISSION @protected-permissions = %*ENV<ZOE_VOTEBAN_PROTECTED_PERMISSIONS> || KICK_MEMBERS, BAN_MEMBERS, ADMINISTRATOR, MANAGE_GUILD;
 
 my Bool $vote-in-progress = False;
 
@@ -30,7 +30,7 @@ sub MAIN($token) {
                         my $user-id = $/.Int;
                         my $user = $discord.get-user($user-id);
                         my $member = $guild.get-member($user);
-                        if not $member.has-any-permission(@protected-permissions) {
+                        if not ($member.has-any-permission(@protected-permissions) || $user.is-bot) {
                             start-vote(:$discord, :$message, :$user, :$member).then({ end-vote(:$discord, :$guild, :$user,
                                     :$message, result => $^a.result) });
                         } else {
