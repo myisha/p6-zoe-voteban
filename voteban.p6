@@ -1,12 +1,15 @@
 #!perl6
 
 use API::Discord;
+use API::Discord::Permissions;
 
 my Str $command-prefix = %*ENV<ZOE_VOTEBAN_COMMAND_PREFIX> || "+";
 my Str $reaction-for-emote = %*ENV<ZOE_VOTEBAN_REACTION_FOR_EMOTE> || "✅";
 my Str $reaction-against-emote = %*ENV<ZOE_VOTEBAN_REACTION_AGAINST_EMOTE> || "❎";
 my Int $votes-required = %*ENV<ZOE_VOTEBAN_VOTES_REQUIRED> || 10;
 my Int $voting-timeout = %*ENV<ZOE_VOTEBAN_VOTING_TIMEOUT> || 10;
+
+my PERMISSION @protected-permissions = KICK_MEMBERS, BAN_MEMBERS, ADMINISTRATOR, MANAGE_GUILD;
 
 my Bool $vote-in-progress = False;
 
@@ -23,12 +26,19 @@ sub MAIN($token) {
 
             if $command eq $command-prefix ~ 'voteban' {
                 if $arg and $arg ~~ / '<@' '!'? <(\d+)> '>' / {
-                    if $vote-in-progress eq False {
+                    if not $vote-in-progress {
                         my $user-id = $/.Int;
                         my $user = $discord.get-user($user-id);
                         my $member = $guild.get-member($user);
-                        start-vote(:$discord, :$message, :$user, :$member).then({ end-vote(:$discord, :$guild, :$user, :$message, result => $^a.result) });
-                    } elsif $vote-in-progress eq True {
+                        if not $member.has-any-permission(@protected-permissions) {
+                            start-vote(:$discord, :$message, :$user, :$member).then({ end-vote(:$discord, :$guild, :$user,
+                                    :$message, result => $^a.result) });
+                        } else {
+                            my $exception = "This user is immune to votebans.";
+                            my %response = exception(:$exception);
+                            $message.channel.send-message(|%response)
+                        }
+                    } elsif $vote-in-progress {
                         my $exception = "There is already a voteban in progress.";
                         my %response = exception(:$exception);
                         $message.channel.send-message(|%response)
