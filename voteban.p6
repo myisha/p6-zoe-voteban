@@ -10,6 +10,7 @@ my Int $votes-required = %*ENV<ZOE_VOTEBAN_VOTES_REQUIRED> || 1;
 my Int $voting-timeout = %*ENV<ZOE_VOTEBAN_VOTING_TIMEOUT> || 10;
 
 my PERMISSION @protected-permissions = %*ENV<ZOE_VOTEBAN_PROTECTED_PERMISSIONS> || KICK_MEMBERS, BAN_MEMBERS, ADMINISTRATOR, MANAGE_GUILD;
+my @protected-roles = %*ENV<ZOE_VOTEBAN_PROTECTED_ROLES> || 733655449987055697;
 
 my Bool $vote-in-progress = False;
 
@@ -30,7 +31,7 @@ sub MAIN($token) {
                         my $user-id = $/.Int;
                         my $user = $discord.get-user($user-id);
                         my $member = $guild.get-member($user);
-                        if not ($member.has-any-permission(@protected-permissions) || $user.is-bot) {
+                        if not ($member.has-any-permission(@protected-permissions) || any($member.roles.map({ $_.id })) == any(@protected-roles) || $user.is-bot) {
                             start-vote(:$discord, :$message, :$user, :$member).then({ end-vote(:$discord, :$guild, :$user,
                                     :$message, result => $^a.result) });
                         } else {
