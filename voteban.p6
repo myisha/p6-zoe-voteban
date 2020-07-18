@@ -6,7 +6,7 @@ use API::Discord::Permissions;
 my Str $command-prefix = %*ENV<ZOE_VOTEBAN_COMMAND_PREFIX> || "+";
 my Str $reaction-for-emote = %*ENV<ZOE_VOTEBAN_REACTION_FOR_EMOTE> || "✅";
 my Str $reaction-against-emote = %*ENV<ZOE_VOTEBAN_REACTION_AGAINST_EMOTE> || "❎";
-my Int $votes-required = %*ENV<ZOE_VOTEBAN_VOTES_REQUIRED> || 10;
+my Int $votes-required = %*ENV<ZOE_VOTEBAN_VOTES_REQUIRED> || 1;
 my Int $voting-timeout = %*ENV<ZOE_VOTEBAN_VOTING_TIMEOUT> || 10;
 
 my PERMISSION @protected-permissions = %*ENV<ZOE_VOTEBAN_PROTECTED_PERMISSIONS> || KICK_MEMBERS, BAN_MEMBERS, ADMINISTRATOR, MANAGE_GUILD;
@@ -25,8 +25,8 @@ sub MAIN($token) {
             my $guild = $message.channel.guild;
 
             if $command eq $command-prefix ~ 'voteban' {
-                if $arg and $arg ~~ / '<@' '!'? <(\d+)> '>' / {
-                    if not $vote-in-progress {
+                if not $vote-in-progress {
+                    if $arg and $arg ~~ / '<@' '!'? <(\d+)> '>' / {
                         my $user-id = $/.Int;
                         my $user = $discord.get-user($user-id);
                         my $member = $guild.get-member($user);
@@ -38,13 +38,13 @@ sub MAIN($token) {
                             my %response = exception(:$exception);
                             $message.channel.send-message(|%response)
                         }
-                    } elsif $vote-in-progress {
-                        my $exception = "There is already a voteban in progress.";
+                    } else {
+                        my $exception = "No valid user was found.";
                         my %response = exception(:$exception);
                         $message.channel.send-message(|%response)
                     }
-                } else {
-                    my $exception = "No valid user was found.";
+                } elsif $vote-in-progress {
+                    my $exception = "There is already a voteban in progress.";
                     my %response = exception(:$exception);
                     $message.channel.send-message(|%response)
                 }
@@ -104,6 +104,7 @@ sub end-vote(:$discord, :$guild, :$user, :$message, :%result) {
                 ],
                 author => { name => "{$user.username}#{$user.discriminator} was banned", icon_url => "https://cdn.discordapp.com/avatars/{$user.id}/{$user.avatar-hash}.png" }
         ;
+        $guild.create-ban($user.id);
         $message.channel.send-message(embed => %payload);
     } else {
         my %payload = description => "$total votes out of a required $votes-required were achieved.",
