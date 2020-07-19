@@ -31,7 +31,8 @@ sub MAIN($token) {
                         my $user-id = $/.Int;
                         my $user = $discord.get-user($user-id);
                         my $member = $guild.get-member($user);
-                        if not ($member.has-any-permission(@protected-permissions) || any($member.roles.map({ $_.id })) == any(@protected-roles) || $user.is-bot) {
+
+                        if not ($member.has-any-permission(@protected-permissions)|| $user.is-bot) {
                             start-vote(:$discord, :$message, :$user, :$member).then({ end-vote(:$discord, :$guild, :$user,
                                     :$message, result => $^a.result) });
                         } else {
