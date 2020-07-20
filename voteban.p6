@@ -33,8 +33,13 @@ sub MAIN($token) {
                         my $member = $guild.get-member($user);
 
                         if not ($member.has-any-permission(@protected-permissions)|| $user.is-bot) {
-                            start-vote(:$discord, :$message, :$user, :$member).then({ end-vote(:$discord, :$guild, :$user,
-                                    :$message, result => $^a.result) });
+                            whenever start-vote(:$discord, :$message, :$user, :$member) -> %result {
+                                %result.say;
+                                whenever end-vote(:$discord, :$guild, :$user, :$message, :%result) {
+                                    # Nothing - this is here so we learn about
+                                    # errors
+                                }
+                            }
                         } else {
                             my $exception = "This user is immune to votebans.";
                             my %response = exception(:$exception);
@@ -90,8 +95,10 @@ sub start-vote(:$discord, :$message, :$user, :$member) {
             }
         }
 
-        whenever Promise.in($voting-timeout) { emit( { yes => $yes-votes, no => $no-votes } );
-        done }
+        whenever Promise.in($voting-timeout) {
+            emit( { yes => $yes-votes, no => $no-votes } );
+            done
+        }
     })
 }
 
